@@ -43,10 +43,13 @@ def main():
     good_path = './data/good-data/'
 
     threshold = get_min_variance(importData(good_path), good_path)
-    print os.path.dirname(sys.argv[1])
-    img = cv2.imread(os.path.dirname(sys.argv[1])+ '/' + os.path.basename(sys.argv[1]), cv2.IMREAD_GRAYSCALE)
+    img_path = os.path.dirname(sys.argv[1])+ '/'
+    img_name = os.path.basename(sys.argv[1])
+    img = cv2.imread(img_path + img_name, cv2.IMREAD_GRAYSCALE)
     if variance_of_laplacian(img) < threshold:
         print "Blurry"
+    else:
+        print "Not blurry"
 
 if __name__ == "__main__":
     main()
