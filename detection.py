@@ -1,36 +1,52 @@
 import cv2
 import numpy as np
 import os
+import sys
 
-def importData():
+def importData(path):
     """
-    ##############
+    Imports data given a path
+    :type path: string
+    :params path: data path
     """
-    # data path 
-    good_path = './data/good-data/'
-    blurry_path = './data/blurry-data/'
-    flare_path = './data/flare-data/'
-
-    good = [f for f in os.listdir(good_path) if os.path.isfile(good_path+f)]
-    flare = [f for f in os.listdir(flare_path) if os.path.isfile(flare_path+f)]
-    blurry = [f for f in os.listdir(good_path) if os.path.isfile(blurry_path+f)]
-    good1 = cv2.imread(good_path + good[0])
-    cv2.imshow('first good img', good1)
-    cv2.waitKey()
+    return [f for f in os.listdir(path) if os.path.isfile(path+f)]
 
 def variance_of_laplacian(image):
     '''
-    compute the Laplacian of the image and then return the focus
-    measure, which is simply the variance of the Laplacian
-
-    :type image: cv2.image ########################
-    :params image: ##############
+    Returns the variance of the Laplacian of an image
+    :type image: cv2.image
+    :params image: cv2 image file
     '''
     return cv2.Laplacian(image, cv2.CV_64F).var()
 
-def main():
-    importData()
+def get_min_variance(imgs, gpath):
+    '''
+    Returns min Laplacian variance of good images
+    :type imgs: list
+    :params imgs: list of image files
+    :type gpath: string
+    :params gpath: directory path of good images
+    '''
+    min_var = sys.maxint
+    for i in imgs:
+        img = cv2.imread(gpath + i, cv2.IMREAD_GRAYSCALE) # read image as grayscale
+        var = variance_of_laplacian(img)
+        if var < min_var:
+            min_var = var
 
+    return min_var
+
+def main():
+    # data paths 
+    blurry_path = './data/blurry-data/'
+    flare_path = './data/flare-data/'
+    good_path = './data/good-data/'
+
+    threshold = get_min_variance(importData(good_path), good_path)
+    print os.path.dirname(sys.argv[1])
+    img = cv2.imread(os.path.dirname(sys.argv[1])+ '/' + os.path.basename(sys.argv[1]), cv2.IMREAD_GRAYSCALE)
+    if variance_of_laplacian(img) < threshold:
+        print "Blurry"
 
 if __name__ == "__main__":
     main()
