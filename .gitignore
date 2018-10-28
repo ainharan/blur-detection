@@ -4,3 +4,5 @@ data/
 # vim backup files
 *.swp
 *.swo
+
+*.pyc
