@@ -8,6 +8,9 @@ class Preprocessing(object):
         self.good_path = './data/good-data/'
 
     def get_training_data(self, path):
+        '''
+        Returns a list of files given a directory path
+        '''
         return [f for f in os.listdir(path) if os.path.isfile(path+f)]
 
 
