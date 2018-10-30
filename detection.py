@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import os
+import sys
 
 from preprocessing import Preprocessing
 from hog import Hog
@@ -63,6 +64,9 @@ def append_sets(dataset, path, training, labels, l):
         labels.append(l)
 
 def read_img(path, file):
+    '''
+    wrapper function that checks if image is broken or not
+    '''
     imrgb = None
     with open(os.path.join(path, file), 'rb') as f:
         check_chars = f.read()[-2:]
@@ -78,51 +82,58 @@ def read_img(path, file):
 def main():
     training, labels, test, paths = get_data()
     test_set = []
+    test_arg = []
     h = Hog()
+    accuracy = 0
 
     svm = cv2.ml.SVM_create()
     svm.setType(cv2.ml.SVM_C_SVC)
     svm.setGamma(0.5)
     svm.setC(30)
     svm.setKernel(cv2.ml.SVM_LINEAR)
-    svm.train(training, cv2.ml.ROW_SAMPLE, labels)
-    #svm_params = dict( kernel_type = cv2.SVM_LINEAR,
-     #               svm_type = cv2.SVM_C_SVC,
-     #               C=2.67, gamma=5.383 )
-
-    print type(labels)
-    # Train the SVM:
-#    svm.train(training, cv2.ml.ROW_SAMPLE, labels) # 10-fold validation
-
-    # Store it by using OpenCV functions:
-#    svm.save("./svm_data.dat")
-
-    # Now create a new SVM & load the model:
-    predictor = cv2.ml.SVM_create()
-    predictor.setType(cv2.ml.SVM_C_SVC)
-    predictor.setKernel(cv2.ml.SVM_LINEAR)
-
-    predictor.load("./svm_data.dat")
-
-    print paths
-    print test
+    svm.train(training, cv2.ml.ROW_SAMPLE, labels) # 10-fold validation
 
     for path, file in zip(paths, test):
-#        img = cv2.imread(path+file)
         img = read_img(path, file)
         if img is None:
-            print file
             continue
 
+        # gets the label of current image for accuracy calculation
+        correct = path.split('/')[2].split('-')[0]
         r_img=cv2.resize(img,(400,300))
         hist=h.hog(r_img)
         test_set.append(hist)
         test_data = np.float32(test_set)
-        print "predicting image " + file
         result = svm.predict(test_data)
-    # Predict with predictor:
-    print result
-#
+        prediction =  int(result[1][-1][0])
+        if prediction == 1 and correct == "flare":
+            accuracy = accuracy +1
+        if prediction == 2 and correct == "blurry":
+            accuracy = accuracy +1
+        if prediction == 3 and correct == "good":
+            accuracy = accuracy +1
+
+    accuracy = float(accuracy) / float(len(result[1]))
+    print accuracy
+
+    if len(sys.argv) > 1:
+        file = sys.argv[1].split('/')[-1]
+        path = os.path.dirname(os.path.abspath(sys.argv[1]))
+        arg_img = read_img(path, file)
+        if arg_img is None:
+            print "The image passed in invalid, bad path or corrupt file"
+
+        # gets the label of current image for accuracy calculation
+        r_img=cv2.resize(arg_img,(400,300))
+        hist=h.hog(r_img)
+        test_arg.append(hist)
+        test_data = np.float32(test_arg)
+        result = svm.predict(test_data)
+        prediction =  int(result[1][-1][0])
+        print prediction
+    else:
+        print "Usage: ./detection.py <path to image>"
+
 
 if __name__ == "__main__":
     main()
