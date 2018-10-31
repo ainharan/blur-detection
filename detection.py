@@ -5,6 +5,7 @@ import sys
 
 from preprocessing import Preprocessing
 from hog import Hog
+from sklearn.model_selection import KFold
 
 
 def get_data():
@@ -86,12 +87,17 @@ def main():
     h = Hog()
     accuracy = 0
 
+    # SVM model
     svm = cv2.ml.SVM_create()
     svm.setType(cv2.ml.SVM_C_SVC)
     svm.setGamma(0.5)
     svm.setC(30)
     svm.setKernel(cv2.ml.SVM_LINEAR)
     svm.train(training, cv2.ml.ROW_SAMPLE, labels) # 10-fold validation
+
+    model = cv2.ml.KNearest_create()
+    model.train(training, cv2.ml.ROW_SAMPLE, labels)
+
 
     for path, file in zip(paths, test):
         img = read_img(path, file)
@@ -105,6 +111,8 @@ def main():
         test_set.append(hist)
         test_data = np.float32(test_set)
         result = svm.predict(test_data)
+        retval, knnresults, neigh_resp, dists = model.findNearest(test_data, 12)
+        print knnresults.ravel()
         prediction =  int(result[1][-1][0])
         if prediction == 1 and correct == "flare":
             accuracy = accuracy +1
@@ -132,7 +140,7 @@ def main():
         prediction =  int(result[1][-1][0])
         print prediction
     else:
-        print "Usage: ./detection.py <path to image>"
+        print "Usage: ./detection.py ./path/to/image.jpg"
 
 
 if __name__ == "__main__":
