@@ -114,7 +114,6 @@ def main():
         path_files = [paths[i] for i in test_index]
         test_files = [test[i] for i in test_index]
 
-#        print X_test
         for path, file in zip(path_files, test_files):
             img = read_img(path, file)
             if img is None:
