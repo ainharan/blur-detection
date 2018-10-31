@@ -5,6 +5,7 @@ import sys
 
 from preprocessing import Preprocessing
 from hog import Hog
+from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
 def get_data():
@@ -34,8 +35,6 @@ def get_data():
     append_sets(blurry_list, pp.blurry_path, x, labels, 2)
     # label good files as 3 and add to training set
     append_sets(good_list, pp.good_path, x, labels, 3)
-
-
 
     return np.float32(x), np.array(labels, dtype=np.int32), test, paths
 
@@ -72,17 +71,6 @@ def read_img(path, file):
 
     return imrgb
 
-def calculate_accuracy(prediction, correct, accuracy):
-    if prediction == 1 and correct == "flare":
-        accuracy = accuracy +1
-    if prediction == 2 and correct == "blurry":
-        accuracy = accuracy +1
-    if prediction == 3 and correct == "good":
-        accuracy = accuracy +1
-
-    return accuracy
-
-
 
 def main():
     training, labels, test, paths = get_data()
@@ -97,8 +85,6 @@ def main():
         X_train, X_test = training[train_index], training[test_index]
         y_train, y_test = labels[train_index], labels[test_index]
         test_set = []
-        svm_sum = 0
-        knn_sum = 0
 
         # SVM model
         svm = cv2.ml.SVM_create()
@@ -113,10 +99,13 @@ def main():
 
         path_files = [paths[i] for i in test_index]
         test_files = [test[i] for i in test_index]
-
+        corrupt_index = 0 # tracks index of corrupt files
         for path, file in zip(path_files, test_files):
             img = read_img(path, file)
+            # deletes corrupt file
             if img is None:
+                y_test = np.delete(y_test, corrupt_index-1)
+                corrupt_index = corrupt_index
                 continue
 
             # gets the label of current image for accuracy calculation
@@ -129,17 +118,23 @@ def main():
             retval, knnresults, neigh_resp, dists = knn.findNearest(test_data, 3)
             prediction_svm =  int(result[1][-1][0])
             prediction_knn = int(knnresults[-1][0])
-            svm_sum = calculate_accuracy(prediction_svm, l, svm_sum)
-            knn_sum = calculate_accuracy(prediction_knn, l, knn_sum)
+            corrupt_index = corrupt_index+1
 
+        r_svm = map(int,result[1].ravel())
+        r_knn = map(int,knnresults.ravel())
         print "---------------- k=", kfold, " ----------------"
         print "SVM predictions: " , result[1].ravel()
         print "KNN predictions: " , knnresults.ravel()
-        print "Actual labels for test set:" , labels[test_index]
-        svm_acc = float(svm_sum) / float(len(result[1]))
-        knn_acc = float(knn_sum) / float(len(knnresults.ravel()))
+        print "Actual labels for test set:" , y_test
+        svm_acc = metrics.accuracy_score(y_test, r_svm)
+        knn_acc = metrics.accuracy_score(y_test, r_knn)
         print "Accuracy of svm: ", svm_acc
         print "Accuracy of knn: ", knn_acc
+        count_svm = np.bincount(r_svm)
+        count_knn = np.bincount(r_knn)
+        print "Null accuracy of svm: ", float(np.argmax(count_svm))/len(result[1])
+        print "Null accuracy of knn: ", float(np.argmax(count_knn))/len(result[1])
+        #print "Confusion matrix: ", metrics.confusion_matrix(y_test, r_svm)
 
         svm_overall = svm_acc + svm_overall
         knn_overall = knn_acc + knn_overall

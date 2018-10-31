@@ -5,4 +5,8 @@ data/
 *.swp
 *.swo
 
+# python cache files
 *.pyc
+
+# latex log files
+*.log
