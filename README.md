@@ -8,6 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Requirements
 python 2.7+
+opencv3
 
 ### Packages
 
