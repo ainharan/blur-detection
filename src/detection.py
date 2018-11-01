@@ -59,6 +59,7 @@ def append_sets(dataset, path, training, labels, l):
 def read_img(path, file):
     '''
     wrapper function that checks if image is broken or not
+    i.e. corrupt file
     '''
     imrgb = None
     with open(os.path.join(path, file), 'rb') as f:
