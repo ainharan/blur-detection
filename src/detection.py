@@ -77,80 +77,19 @@ def main():
     training, labels, test, paths = get_data()
     test_arg = []
     h = Hog()
+    show_results = False
 
-    kfold = 1
-    svm_overall = 0
-    knn_overall = 0
-    skf = StratifiedKFold(n_splits=5)
-    for train_index, test_index in skf.split(training, labels):
-        X_train, X_test = training[train_index], training[test_index]
-        y_train, y_test = labels[train_index], labels[test_index]
-        test_set = []
-
-        # SVM model
-        svm = cv2.ml.SVM_create()
-        svm.setType(cv2.ml.SVM_C_SVC)
-        svm.setGamma(0.5)
-        svm.setC(30)
-        svm.setKernel(cv2.ml.SVM_LINEAR)
-        svm.train(X_train, cv2.ml.ROW_SAMPLE, y_train) 
-
-        knn = cv2.ml.KNearest_create()
-        knn.train(X_train, cv2.ml.ROW_SAMPLE, y_train)
-
-        path_files = [paths[i] for i in test_index]
-        test_files = [test[i] for i in test_index]
-        corrupt_index = 0 # tracks index of corrupt files
-        for path, file in zip(path_files, test_files):
-            img = read_img(path, file)
-            # deletes corrupt file
-            if img is None:
-                y_test = np.delete(y_test, corrupt_index-1)
-                corrupt_index = corrupt_index
-                continue
-
-            # gets the label of current image for accuracy calculation
-            l = path.split('/')[2].split('-')[0]
-            r_img=cv2.resize(img,(400,300))
-            hist=h.hog(r_img)
-            test_set.append(hist)
-            test_data = np.float32(test_set)
-            result = svm.predict(test_data)
-            retval, knnresults, neigh_resp, dists = knn.findNearest(test_data, 3)
-            prediction_svm =  int(result[1][-1][0])
-            prediction_knn = int(knnresults[-1][0])
-            corrupt_index = corrupt_index+1
-
-        r_svm = map(int,result[1].ravel())
-        r_knn = map(int,knnresults.ravel())
-        print "---------------- k=", kfold, " ----------------"
-        print "SVM predictions: " , result[1].ravel()
-        print "KNN predictions: " , knnresults.ravel()
-        print "Actual labels for test set:" , y_test
-        svm_acc = metrics.accuracy_score(y_test, r_svm)
-        knn_acc = metrics.accuracy_score(y_test, r_knn)
-        print "Accuracy of svm: ", svm_acc
-        print "Accuracy of knn: ", knn_acc
-        count_svm = np.bincount(r_svm)
-        count_knn = np.bincount(r_knn)
-        print "Null accuracy of svm: ", float(np.argmax(count_svm))/len(result[1])
-        print "Null accuracy of knn: ", float(np.argmax(count_knn))/len(result[1])
-        #print "Confusion matrix: ", metrics.confusion_matrix(y_test, r_svm)
-
-        svm_overall = svm_acc + svm_overall
-        knn_overall = knn_acc + knn_overall
-        kfold = kfold + 1
-
-    svm_avg = float(svm_overall)/float(kfold-1)
-    knn_avg = float(knn_overall)/float(kfold-1)
-
-    print "Avg accuracy of svm after k=",kfold-1, ": ", svm_avg
-    print "Avg accuracy of knn after k=",kfold-1, ": ", knn_avg
-
+    # SVM model
+    svm = cv2.ml.SVM_create()
+    svm.setType(cv2.ml.SVM_C_SVC)
+    svm.setGamma(0.5)
+    svm.setC(30)
+    svm.setKernel(cv2.ml.SVM_LINEAR)
+#    svm.train(training[], cv2.ml.ROW_SAMPLE, y_train) 
 
     if len(sys.argv) > 1:
         if len(sys.argv) == 3 and sys.argv[2] == "--show-results":
-            print "TO DO"
+            show_results = True
         file = sys.argv[1].split('/')[-1]
         path = os.path.dirname(os.path.abspath(sys.argv[1]))
         arg_img = read_img(path, file)
@@ -170,6 +109,74 @@ def main():
 #        print prediction_knn
     else:
         print "Usage: ./detection.py ./path/to/image.jpg"
+
+
+    if show_results is true:
+        kfold = 1
+        svm_overall = 0
+        knn_overall = 0
+        skf = StratifiedKFold(n_splits=5)
+        for train_index, test_index in skf.split(training, labels):
+            X_train, X_test = training[train_index], training[test_index]
+            y_train, y_test = labels[train_index], labels[test_index]
+            test_set = []
+
+            svm.train(X_train, cv2.ml.ROW_SAMPLE, y_train) 
+
+            knn = cv2.ml.KNearest_create()
+            knn.train(X_train, cv2.ml.ROW_SAMPLE, y_train)
+
+            path_files = [paths[i] for i in test_index]
+            test_files = [test[i] for i in test_index]
+            corrupt_index = 0 # tracks index of corrupt files
+            for path, file in zip(path_files, test_files):
+                img = read_img(path, file)
+                # deletes corrupt file
+                if img is None:
+                    y_test = np.delete(y_test, corrupt_index-1)
+                    corrupt_index = corrupt_index
+                    continue
+
+                # gets the label of current image for accuracy calculation
+                l = path.split('/')[2].split('-')[0]
+                r_img=cv2.resize(img,(400,300))
+                hist=h.hog(r_img)
+                test_set.append(hist)
+                test_data = np.float32(test_set)
+                result = svm.predict(test_data)
+                retval, knnresults, neigh_resp, dists = knn.findNearest(test_data, 3)
+                prediction_svm =  int(result[1][-1][0])
+                prediction_knn = int(knnresults[-1][0])
+                corrupt_index = corrupt_index+1
+
+            r_svm = map(int,result[1].ravel())
+            r_knn = map(int,knnresults.ravel())
+            svm_acc = metrics.accuracy_score(y_test, r_svm)
+            knn_acc = metrics.accuracy_score(y_test, r_knn)
+            count_svm = np.bincount(r_svm)
+            count_knn = np.bincount(r_knn)
+
+            print "---------------- k=", kfold, " ----------------"
+            print "SVM predictions: " , result[1].ravel()
+            print "KNN predictions: " , knnresults.ravel()
+            print "Actual labels for test set:" , y_test
+            print "Accuracy of svm: ", svm_acc
+            print "Accuracy of knn: ", knn_acc
+            print "Null accuracy of svm: ", float(np.argmax(count_svm))/len(result[1])
+            print "Null accuracy of knn: ", float(np.argmax(count_knn))/len(result[1])
+            #print "Confusion matrix: ", metrics.confusion_matrix(y_test, r_svm)
+
+            svm_overall = svm_acc + svm_overall
+            knn_overall = knn_acc + knn_overall
+            kfold = kfold + 1
+
+        svm_avg = float(svm_overall)/float(kfold-1)
+        knn_avg = float(knn_overall)/float(kfold-1)
+
+        print "Avg accuracy of svm after k=",kfold-1, ": ", svm_avg
+        print "Avg accuracy of knn after k=",kfold-1, ": ", knn_avg
+
+
 
 
 if __name__ == "__main__":
