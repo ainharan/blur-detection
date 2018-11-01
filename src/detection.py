@@ -158,8 +158,10 @@ def print_cv_results(svm,h):
         r_knn = map(int,knnresults.ravel())
         svm_acc = metrics.accuracy_score(y_test, r_svm)
         knn_acc = metrics.accuracy_score(y_test, r_knn)
-        count_svm = np.bincount(r_svm)
-        count_knn = np.bincount(r_knn)
+#        count_svm = np.bincount(r_svm)
+ #       count_knn = np.bincount(r_knn)
+        unique_svm, num_svm = np.unique(result[1].ravel(), return_counts=True)
+        unique_knn, num_knn = np.unique(knnresults.ravel(), return_counts=True)
 
         print "---------------- k=", kfold, " ----------------"
         print "SVM predictions: " , result[1].ravel()
@@ -167,8 +169,8 @@ def print_cv_results(svm,h):
         print "Actual labels for test set:" , y_test
         print "Accuracy of svm: ", svm_acc
         print "Accuracy of knn: ", knn_acc
-        print "Null accuracy of svm: ", float(np.argmax(count_svm))/len(result[1])
-        print "Null accuracy of knn: ", float(np.argmax(count_knn))/len(result[1])
+        print "Null accuracy of svm: ", float(max(num_svm))/float(len(result[1]))
+        print "Null accuracy of knn: ", float(max(num_knn))/float(len(result[1]))
         #print "Confusion matrix: ", metrics.confusion_matrix(y_test, r_svm)
 
         svm_overall = svm_acc + svm_overall
@@ -187,7 +189,6 @@ def print_cv_results(svm,h):
 def main():
     test_arg = []
     h = Hog()
-    show_results = False
 
     # SVM model
     svm = cv2.ml.SVM_create()
@@ -195,6 +196,17 @@ def main():
     svm.setGamma(0.5)
     svm.setC(30)
     svm.setKernel(cv2.ml.SVM_LINEAR)
+
+    # create flags for arguments
+    show_results = False
+    raw_prediction = False
+    for arg in sys.argv:
+        # if true print cross validation results
+        if arg == "--show-results":
+            show_results = True
+        # if true print 0 for good, 1 for flare, 2 for blurry
+        if arg == "--raw-prediction":
+            raw_prediction = True
 
     image_file = Path(sys.argv[1])
     # if arguments are passed correctly train
@@ -207,8 +219,6 @@ def main():
         training, labels, test, paths = get_split_data()
         svm.train(training, cv2.ml.ROW_SAMPLE, labels)
 
-        if len(sys.argv) == 3 and sys.argv[2] == "--show-results":
-            show_results = True
         file = sys.argv[1].split('/')[-1]
         path = os.path.dirname(os.path.abspath(sys.argv[1]))
         arg_img = read_img(path, file)
@@ -224,9 +234,12 @@ def main():
         #retval, knnresults, neigh_resp, dists = knn.findNearest(test_data, 3)
         # if blurry data still print 0 for testing purposes to show faulty image
         prediction =  int(result[1][-1][0])
-        if prediction == 2:
-            print "1"
-        else:                       # else if prediction is good or flare print appropriate label
+        if raw_prediction is False:
+            if prediction == 2:
+                print "1"
+            else:                       # else if prediction is good or flare print appropriate label
+                print prediction
+        else:
             print prediction
 #       prediction_knn = int(knnresults[-1][0])
 #        print prediction_knn
