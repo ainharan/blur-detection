@@ -24,7 +24,9 @@ pathlib==1.0.1
 ### Getting started
 1. Clone the repository
 2. Download the dataset available [here][dataset]. Your directory should look like the following:
+
 ![](dir_instructions.png)
+
 3. Create a virtual python environment with virtualenv
 4. `cd src && pip install -r reqirements.txt`
 5. Change the first line of detection.py from `#!/c/Python27/python` to your relative path of python 2.
@@ -59,7 +61,7 @@ eg.
 python detection.py  --show-results
 
 ```
-
+note: combinations of these flags work as well, however image path must be provided as 2nd argument like examples
 ## Authors
 
 * **Ainharan Subramaniam**
