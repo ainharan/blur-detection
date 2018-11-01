@@ -34,7 +34,7 @@ def get_data():
     # label blurry files as 2 and add to training set
     append_sets(blurry_list, pp.blurry_path, x, labels, 2)
     # label good files as 3 and add to training set
-    append_sets(good_list, pp.good_path, x, labels, 3)
+    append_sets(good_list, pp.good_path, x, labels, 0)
 
     return np.float32(x), np.array(labels, dtype=np.int32), test, paths
 
