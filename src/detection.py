@@ -110,7 +110,7 @@ def read_img(path, file):
         #Not complete image
         return imrgb
     else:
-        imrgb = cv2.imread(os.path.join(path, file), 1)
+        imrgb = cv2.imread(os.path.join(path, file), cv2.IMREAD_GRAYSCALE)
 
     return imrgb
 
@@ -149,7 +149,7 @@ def print_cv_results(svm,h):
             test_set.append(hist)
             test_data = np.float32(test_set)
             result = svm.predict(test_data)
-            retval, knnresults, neigh_resp, dists = knn.findNearest(test_data, 3)
+            retval, knnresults, neigh_resp, dists = knn.findNearest(test_data, 4)
             prediction_svm =  int(result[1][-1][0])
             prediction_knn = int(knnresults[-1][0])
             corrupt_index = corrupt_index+1
